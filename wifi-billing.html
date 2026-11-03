@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Techstacity Wi-Fi Billing & Payment System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- html2pdf.js for Generating PDF Receipts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for clean look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 flex flex-col font-sans antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="bg-brand-600 text-white p-2 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-wifi text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight tracking-wide text-white">Techstacity</h1>
+                        <p class="text-xs text-slate-400">Wi-Fi Billing & Payment Recording System</p>
+                    </div>
+                </div>
+
+                <!-- Actions / Info -->
+                <div class="flex items-center space-x-3">
+                    <button id="openAddModalBtn" onclick="openPaymentModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center shadow-sm transition-all duration-150 transform active:scale-95">
+                        <i class="fa-solid fa-plus mr-2"></i> Record New Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+        <!-- Stats Overview Row -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total Revenue -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Revenue</p>
+                    <h3 id="statTotalRevenue" class="text-2xl font-bold text-slate-900 mt-1">KES 0</h3>
+                    <p class="text-xs text-emerald-600 mt-1 font-medium"><i class="fa-solid fa-arrow-trend-up"></i> Lifetime collected</p>
+                </div>
+                <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl font-semibold">
+                    <i class="fa-solid fa-money-bill-wave"></i>
+                </div>
+            </div>
+
+            <!-- Total Paid Clients -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Recorded Transactions</p>
+                    <h3 id="statTotalClients" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+                    <p class="text-xs text-brand-600 mt-1 font-medium"><i class="fa-solid fa-receipt"></i> Receipts issued</p>
+                </div>
+                <div class="w-12 h-12 bg-brand-50 text-brand-600 rounded-xl flex items-center justify-center text-xl font-semibold">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+
+            <!-- Today's Revenue -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Today's Collections</p>
+                    <h3 id="statTodayRevenue" class="text-2xl font-bold text-slate-900 mt-1">KES 0</h3>
+                    <p class="text-xs text-indigo-600 mt-1 font-medium"><i class="fa-solid fa-calendar-day"></i> Collected today</p>
+                </div>
+                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl font-semibold">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+            </div>
+
+            <!-- Popular Package -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Top Package</p>
+                    <h3 id="statTopPackage" class="text-xl font-bold text-slate-900 mt-1 truncate max-w-[150px]">-</h3>
+                    <p class="text-xs text-amber-600 mt-1 font-medium"><i class="fa-solid fa-fire"></i> Most subscribed</p>
+                </div>
+                <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl font-semibold">
+                    <i class="fa-solid fa-tower-broadcast"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search, Filter & Actions Controls -->
+        <section class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+            <!-- Search Bar -->
+            <div class="relative w-full md:w-96">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="searchInput" placeholder="Search client name, phone or receipt..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+            </div>
+
+            <!-- Filters & Reset -->
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                <!-- Package Filter -->
+                <select id="filterPackage" class="border border-slate-300 rounded-lg text-sm px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="">All Packages</option>
+                    <option value="Home Lite - 5 Mbps">Home Lite (5 Mbps)</option>
+                    <option value="Home Standard - 10 Mbps">Home Standard (10 Mbps)</option>
+                    <option value="Home Super - 20 Mbps">Home Super (20 Mbps)</option>
+                    <option value="Business Ultra - 50 Mbps">Business Ultra (50 Mbps)</option>
+                    <option value="Daily Pass - Unlimited">Daily Pass</option>
+                </select>
+
+                <!-- Payment Method Filter -->
+                <select id="filterMethod" class="border border-slate-300 rounded-lg text-sm px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="">All Payment Methods</option>
+                    <option value="M-Pesa">M-Pesa</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Cheque">Cheque</option>
+                </select>
+
+                <!-- Reset Filters Button -->
+                <button onclick="resetFilters()" class="text-slate-600 hover:text-slate-900 border border-slate-300 hover:bg-slate-50 px-3 py-2 rounded-lg text-sm transition">
+                    <i class="fa-solid fa-arrows-rotate mr-1"></i> Reset
+                </button>
+            </div>
+        </section>
+
+        <!-- Payments Data Table -->
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            <th class="py-3.5 px-4">Receipt / Date</th>
+                            <th class="py-3.5 px-4">Client Details</th>
+                            <th class="py-3.5 px-4">Package</th>
+                            <th class="py-3.5 px-4">Amount</th>
+                            <th class="py-3.5 px-4">Method</th>
+                            <th class="py-3.5 px-4 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsTableBody" class="divide-y divide-slate-200 text-sm">
+                        <!-- Table Dynamic Rows Inserted Here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State Display -->
+            <div id="emptyState" class="hidden text-center py-12 px-4">
+                <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <h3 class="text-base font-semibold text-slate-700">No payment records found</h3>
+                <p class="text-sm text-slate-500 max-w-sm mx-auto mt-1">Try adjusting your search criteria or add a new Wi-Fi payment record using the button above.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Form for Adding/Editing Payment Entry -->
+    <div id="paymentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden transform transition-all my-8">
+            <!-- Modal Header -->
+            <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                <h3 id="modalTitle" class="font-bold text-lg flex items-center">
+                    <i class="fa-solid fa-receipt mr-2 text-brand-500"></i> Record New Payment
+                </h3>
+                <button onclick="closePaymentModal()" class="text-slate-400 hover:text-white transition rounded-lg p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="paymentForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+                <input type="hidden" id="entryRecordId">
+
+                <!-- Client Name & Phone -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Client Full Name *</label>
+                        <input type="text" id="clientName" required placeholder="e.g. John Doe" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Phone / Account No. *</label>
+                        <input type="text" id="clientPhone" required placeholder="e.g. 0712345678" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Package & Amount -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Wi-Fi Package *</label>
+                        <select id="packageSelect" onchange="autoFillPackageAmount()" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            <option value="">-- Select Package --</option>
+                            <option value="Home Lite - 5 Mbps" data-price="200">Monthly Tier 1 - KES 200</option>
+                            <option value="Home Standard - 10 Mbps" data-price="250">Monthly Tier 2 - KES 250</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Amount Paid (KES) *</label>
+                        <input type="number" id="amountPaid" min="1" step="0.01" required placeholder="e.g. 2500" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Date & Method -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Payment Date *</label>
+                        <input type="date" id="paymentDate" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Payment Method *</label>
+                        <select id="paymentMethod" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            <option value="M-Pesa">M-Pesa</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Cheque">Cheque</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Reference Code & Notes -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Transaction Ref Code</label>
+                        <input type="text" id="transactionRef" placeholder="e.g. QFH8923KL" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Billing Period / Expiry</label>
+                        <input type="date" id="expiryDate" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Notes / Remarks</label>
+                    <textarea id="paymentNotes" rows="2" placeholder="Optional notes (e.g. Router installation included, discount given...)" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200">
+                    <button type="button" onclick="closePaymentModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 hover:bg-slate-50 transition">Cancel</button>
+                    <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition shadow-sm">Save Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden Printable Receipt Preview Container -->
+    <div id="receiptModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Receipt Header Controls -->
+            <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between shrink-0">
+                <span class="font-semibold text-sm flex items-center">
+                    <i class="fa-solid fa-file-pdf mr-2 text-red-400"></i> PDF Receipt Viewer
+                </span>
+                <div class="flex items-center space-x-2">
+                    <button onclick="downloadPDFReceipt()" class="bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center transition shadow-sm">
+                        <i class="fa-solid fa-download mr-1.5"></i> Download PDF
+                    </button>
+                    <button onclick="printReceiptDirectly()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center transition">
+                        <i class="fa-solid fa-print mr-1.5"></i> Print
+                    </button>
+                    <button onclick="closeReceiptModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Receipt Layout Target Content -->
+            <div class="p-6 overflow-y-auto bg-slate-100 flex-1 flex justify-center">
+                <!-- Actual Printable Receipt Paper Card -->
+                <div id="pdfReceiptTemplate" class="bg-white p-8 rounded-lg shadow-sm border border-slate-200 w-full max-w-md text-slate-800 text-xs leading-relaxed">
+                    
+                    <!-- Top Branding -->
+                    <div class="text-center pb-5 border-b border-dashed border-slate-300">
+                        <div class="inline-flex items-center justify-center w-10 h-10 bg-brand-600 text-white rounded-xl mb-2">
+                            <i class="fa-solid fa-wifi text-lg"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-slate-900 tracking-wide uppercase">Techstacity Wi-Fi Solutions</h2>
+                        <p class="text-slate-500 text-[11px]">High Speed Internet Service Provider</p>
+                        <p class="text-slate-500 text-[11px]">Nairobi, Kenya • Support: +254 758 130 962</p>
+                    </div>
+
+                    <!-- Receipt Title & Number -->
+                    <div class="py-4 border-b border-dashed border-slate-300 flex justify-between items-center">
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Payment Receipt</p>
+                            <h4 id="rcptNo" class="font-bold text-sm text-brand-700">#REC-0000</h4>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] uppercase font-bold text-slate-400">Date Issued</p>
+                            <p id="rcptDate" class="font-semibold text-slate-700">2026-00-00</p>
+                        </div>
+                    </div>
+
+                    <!-- Client Details Block -->
+                    <div class="py-4 border-b border-dashed border-slate-300 space-y-1.5">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Client Name:</span>
+                            <span id="rcptClientName" class="font-bold text-slate-900">John Doe</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Phone / Acc No:</span>
+                            <span id="rcptClientPhone" class="font-medium text-slate-800">0700000000</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Payment Method:</span>
+                            <span id="rcptMethod" class="font-medium text-slate-800">M-Pesa</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Transaction Ref:</span>
+                            <span id="rcptRef" class="font-mono font-medium text-slate-800">REF123456</span>
+                        </div>
+                    </div>
+
+                    <!-- Subscription Details -->
+                    <div class="py-4 border-b border-dashed border-slate-300 space-y-2">
+                        <p class="text-[10px] uppercase font-bold text-slate-400 mb-1">Subscription Breakdown</p>
+                        <div class="flex justify-between font-medium text-slate-800">
+                            <span id="rcptPackage">Home Standard (10 Mbps)</span>
+                            <span id="rcptAmountItem">KES 2,500</span>
+                        </div>
+                        <div id="rcptExpiryContainer" class="flex justify-between text-[11px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100">
+                            <span>Valid Until:</span>
+                            <span id="rcptExpiry" class="font-semibold text-slate-700">2026-00-00</span>
+                        </div>
+                    </div>
+
+                    <!-- Total Paid Card -->
+                    <div class="py-4 border-b border-dashed border-slate-300 flex justify-between items-center bg-brand-50/50 -mx-8 px-8 my-2">
+                        <div>
+                            <span class="text-xs font-bold uppercase text-brand-900">Total Paid</span>
+                            <p class="text-[10px] text-slate-500">Status: <span class="text-emerald-600 font-bold">COMPLETED</span></p>
+                        </div>
+                        <span id="rcptTotalAmount" class="text-xl font-extrabold text-brand-700">KES 2,500</span>
+                    </div>
+
+                    <!-- Notes if present -->
+                    <div id="rcptNotesWrapper" class="py-3 text-[11px] text-slate-500 border-b border-dashed border-slate-300">
+                        <span class="font-semibold text-slate-700">Notes:</span>
+                        <p id="rcptNotes" class="italic">None</p>
+                    </div>
+
+                    <!-- Footer Note -->
+                    <div class="pt-6 text-center text-slate-400 text-[10px] space-y-1">
+                        <p>Thank you for choosing Techstacity Wi-Fi services!</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-3 z-50 border border-slate-800">
+        <div id="toastIcon" class="text-emerald-400 text-lg"><i class="fa-solid fa-circle-check"></i></div>
+        <div id="toastMessage" class="text-sm font-medium">Operation completed successfully.</div>
+    </div>
+
+    <!-- System JavaScript -->
+    <script>
+        // Sample Mock Initial Data
+        const initialMockData = [
+            {
+                id: "REC-8901",
+                clientName: "David Ochieng",
+                clientPhone: "0712345678",
+                packageName: "Home Standard - 10 Mbps",
+                amount: 2500,
+                date: new Date().toISOString().split('T')[0],
+                method: "M-Pesa",
+                ref: "QFH9283KL",
+                expiry: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
+                notes: "Monthly subscription standard tier"
+            },
+            {
+                id: "REC-8902",
+                clientName: "Grace Wanjiku",
+                clientPhone: "0723456789",
+                packageName: "Home Super - 20 Mbps",
+                amount: 4000,
+                date: new Date().toISOString().split('T')[0],
+                method: "M-Pesa",
+                ref: "QFG1102MM",
+                expiry: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
+                notes: "Renewed via M-Pesa automatic paybill"
+            },
+            {
+                id: "REC-8903",
+                clientName: "Apex Cyber Cafe",
+                clientPhone: "0733998877",
+                packageName: "Business Ultra - 50 Mbps",
+                amount: 7500,
+                date: "2026-11-01",
+                method: "Bank Transfer",
+                ref: "BK-991823",
+                expiry: "2026-12-01",
+                notes: "Commercial link - priority SLA"
+            },
+            {
+                id: "REC-8904",
+                clientName: "Kevin Kiprono",
+                clientPhone: "0790112233",
+                packageName: "Home Lite - 5 Mbps",
+                amount: 1500,
+                date: "2026-10-28",
+                method: "Cash",
+                ref: "CASH-002",
+                expiry: "2026-11-28",
+                notes: "Paid cash at main branch"
+            }
+        ];
+
+        // Global State
+        let records = [];
+        let activeReceiptRecord = null;
+
+        // Initialize Application
+        window.addEventListener('DOMContentLoaded', () => {
+            // Set default date input to today
+            document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+            
+            // Load from LocalStorage or default to mock data
+            const savedRecords = localStorage.getItem('techstacity_wifi_records');
+            if (savedRecords) {
+                try {
+                    records = JSON.parse(savedRecords);
+                } catch(e) {
+                    records = [...initialMockData];
+                }
+            } else {
+                records = [...initialMockData];
+                saveRecordsToStorage();
+            }
+
+            // Event Listeners for Filters & Search
+            document.getElementById('searchInput').addEventListener('input', renderTable);
+            document.getElementById('filterPackage').addEventListener('change', renderTable);
+            document.getElementById('filterMethod').addEventListener('change', renderTable);
+
+            // Initial Render
+            renderTable();
+            updateStats();
+        });
+
+        // Save records state to local storage
+        function saveRecordsToStorage() {
+            localStorage.setItem('techstacity_wifi_records', JSON.stringify(records));
+        }
+
+        // Auto-fill amount based on package selection
+        function autoFillPackageAmount() {
+            const select = document.getElementById('packageSelect');
+            const selectedOption = select.options[select.selectedIndex];
+            const price = selectedOption.getAttribute('data-price');
+            
+            if (price) {
+                document.getElementById('amountPaid').value = price;
+            }
+
+            // Auto calculate 30 days expiration date default
+            const pDateVal = document.getElementById('paymentDate').value;
+            if (pDateVal) {
+                const pDate = new Date(pDateVal);
+                pDate.setDate(pDate.getDate() + 30);
+                document.getElementById('expiryDate').value = pDate.toISOString().split('T')[0];
+            }
+        }
+
+        // Render Table Data
+        function renderTable() {
+            const tbody = document.getElementById('paymentsTableBody');
+            const emptyState = document.getElementById('emptyState');
+            
+            const searchValue = document.getElementById('searchInput').value.toLowerCase().trim();
+            const packageFilter = document.getElementById('filterPackage').value;
+            const methodFilter = document.getElementById('filterMethod').value;
+
+            // Filter logic
+            const filteredRecords = records.filter(item => {
+                const matchesSearch = item.clientName.toLowerCase().includes(searchValue) ||
+                                      item.clientPhone.toLowerCase().includes(searchValue) ||
+                                      item.id.toLowerCase().includes(searchValue) ||
+                                      (item.ref && item.ref.toLowerCase().includes(searchValue));
+                
+                const matchesPackage = packageFilter === "" || item.packageName === packageFilter;
+                const matchesMethod = methodFilter === "" || item.method === methodFilter;
+
+                return matchesSearch && matchesPackage && matchesMethod;
+            });
+
+            tbody.innerHTML = '';
+
+            if (filteredRecords.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                
+                filteredRecords.forEach(record => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+
+                    tr.innerHTML = `
+                        <td class="py-3.5 px-4">
+                            <span class="font-mono text-xs font-bold text-brand-600 block">${record.id}</span>
+                            <span class="text-xs text-slate-500"><i class="fa-regular fa-calendar mr-1"></i>${formatDate(record.date)}</span>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="font-semibold text-slate-900">${escapeHtml(record.clientName)}</div>
+                            <div class="text-xs text-slate-500 font-mono"><i class="fa-solid fa-phone text-[10px] mr-1"></i>${escapeHtml(record.clientPhone)}</div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">
+                                ${escapeHtml(record.packageName)}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 font-bold text-slate-900">
+                            KES ${formatCurrency(record.amount)}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${getMethodBadgeClass(record.method)}">
+                                ${escapeHtml(record.method)}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            <div class="flex items-center justify-center space-x-2">
+                                <button onclick="openReceiptModal('${record.id}')" title="Generate PDF Receipt" class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-lg text-xs font-medium transition flex items-center">
+                                    <i class="fa-solid fa-file-pdf mr-1"></i> PDF
+                                </button>
+                                <button onclick="editRecord('${record.id}')" title="Edit Entry" class="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-lg text-xs transition">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="deleteRecord('${record.id}')" title="Delete Entry" class="bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 p-2 rounded-lg text-xs transition">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        // Method Badge Class Helper
+        function getMethodBadgeClass(method) {
+            switch(method) {
+                case 'M-Pesa': return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+                case 'Cash': return 'bg-amber-100 text-amber-800 border border-amber-200';
+                case 'Bank Transfer': return 'bg-blue-100 text-blue-800 border border-blue-200';
+                default: return 'bg-slate-100 text-slate-700 border border-slate-200';
+            }
+        }
+
+        // Calculate and Update Dashboard Stats Cards
+        function updateStats() {
+            const totalRevenue = records.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
+            const totalClients = records.length;
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayRevenue = records
+                .filter(item => item.date === todayStr)
+                .reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
+
+            // Find top package
+            const packageCounts = {};
+            records.forEach(r => {
+                packageCounts[r.packageName] = (packageCounts[r.packageName] || 0) + 1;
+            });
+            let topPkg = "-";
+            let maxCount = 0;
+            for (const pkg in packageCounts) {
+                if (packageCounts[pkg] > maxCount) {
+                    maxCount = packageCounts[pkg];
+                    topPkg = pkg.split(' - ')[0]; // short name
+                }
+            }
+
+            document.getElementById('statTotalRevenue').textContent = `KES ${formatCurrency(totalRevenue)}`;
+            document.getElementById('statTotalClients').textContent = totalClients;
+            document.getElementById('statTodayRevenue').textContent = `KES ${formatCurrency(todayRevenue)}`;
+            document.getElementById('statTopPackage').textContent = topPkg;
+        }
+
+        // Modal Open / Close Handlers
+        function openPaymentModal(editId = null) {
+            const modal = document.getElementById('paymentModal');
+            const form = document.getElementById('paymentForm');
+            const modalTitle = document.getElementById('modalTitle');
+
+            form.reset();
+            document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+
+            if (editId) {
+                const record = records.find(r => r.id === editId);
+                if (record) {
+                    document.getElementById('entryRecordId').value = record.id;
+                    document.getElementById('clientName').value = record.clientName;
+                    document.getElementById('clientPhone').value = record.clientPhone;
+                    document.getElementById('packageSelect').value = record.packageName;
+                    document.getElementById('amountPaid').value = record.amount;
+                    document.getElementById('paymentDate').value = record.date;
+                    document.getElementById('paymentMethod').value = record.method;
+                    document.getElementById('transactionRef').value = record.ref || '';
+                    document.getElementById('expiryDate').value = record.expiry || '';
+                    document.getElementById('paymentNotes').value = record.notes || '';
+                    
+                    modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square mr-2 text-brand-500"></i> Edit Payment Record`;
+                }
+            } else {
+                document.getElementById('entryRecordId').value = '';
+                modalTitle.innerHTML = `<i class="fa-solid fa-receipt mr-2 text-brand-500"></i> Record New Payment`;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.add('hidden');
+        }
+
+        // Form Submission Handler
+        function handleFormSubmit(event) {
+            event.preventDefault();
+
+            const recordId = document.getElementById('entryRecordId').value;
+            const clientName = document.getElementById('clientName').value.trim();
+            const clientPhone = document.getElementById('clientPhone').value.trim();
+            const packageName = document.getElementById('packageSelect').value;
+            const amount = parseFloat(document.getElementById('amountPaid').value);
+            const date = document.getElementById('paymentDate').value;
+            const method = document.getElementById('paymentMethod').value;
+            const ref = document.getElementById('transactionRef').value.trim();
+            const expiry = document.getElementById('expiryDate').value;
+            const notes = document.getElementById('paymentNotes').value.trim();
+
+            if (recordId) {
+                // Edit existing record
+                const index = records.findIndex(r => r.id === recordId);
+                if (index !== -1) {
+                    records[index] = {
+                        id: recordId,
+                        clientName,
+                        clientPhone,
+                        packageName,
+                        amount,
+                        date,
+                        method,
+                        ref,
+                        expiry,
+                        notes
+                    };
+                    showToast('Record updated successfully');
+                }
+            } else {
+                // Add new record
+                const newId = `REC-${Math.floor(1000 + Math.random() * 9000)}`;
+                const newRecord = {
+                    id: newId,
+                    clientName,
+                    clientPhone,
+                    packageName,
+                    amount,
+                    date,
+                    method,
+                    ref: ref || `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+                    expiry,
+                    notes
+                };
+                records.unshift(newRecord);
+                showToast('New payment entry recorded');
+            }
+
+            saveRecordsToStorage();
+            renderTable();
+            updateStats();
+            closePaymentModal();
+        }
+
+        // Edit Record Trigger
+        function editRecord(id) {
+            openPaymentModal(id);
+        }
+
+        // Delete Record Trigger
+        function deleteRecord(id) {
+            if (confirm(`Are you sure you want to delete payment entry ${id}?`)) {
+                records = records.filter(r => r.id !== id);
+                saveRecordsToStorage();
+                renderTable();
+                updateStats();
+                showToast('Payment record removed', 'delete');
+            }
+        }
+
+        // Reset Filters
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('filterPackage').value = '';
+            document.getElementById('filterMethod').value = '';
+            renderTable();
+        }
+
+        // Receipt Modal Handlers & Fill Logic
+        function openReceiptModal(id) {
+            const record = records.find(r => r.id === id);
+            if (!record) return;
+
+            activeReceiptRecord = record;
+
+            // Fill PDF Template UI
+            document.getElementById('rcptNo').textContent = `#${record.id}`;
+            document.getElementById('rcptDate').textContent = formatDate(record.date);
+            document.getElementById('rcptClientName').textContent = record.clientName;
+            document.getElementById('rcptClientPhone').textContent = record.clientPhone;
+            document.getElementById('rcptMethod').textContent = record.method;
+            document.getElementById('rcptRef').textContent = record.ref || 'N/A';
+            document.getElementById('rcptPackage').textContent = record.packageName;
+            document.getElementById('rcptAmountItem').textContent = `KES ${formatCurrency(record.amount)}`;
+            document.getElementById('rcptTotalAmount').textContent = `KES ${formatCurrency(record.amount)}`;
+
+            if (record.expiry) {
+                document.getElementById('rcptExpiryContainer').classList.remove('hidden');
+                document.getElementById('rcptExpiry').textContent = formatDate(record.expiry);
+            } else {
+                document.getElementById('rcptExpiryContainer').classList.add('hidden');
+            }
+
+            if (record.notes) {
+                document.getElementById('rcptNotesWrapper').classList.remove('hidden');
+                document.getElementById('rcptNotes').textContent = record.notes;
+            } else {
+                document.getElementById('rcptNotesWrapper').classList.add('hidden');
+            }
+
+            document.getElementById('receiptModal').classList.remove('hidden');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').classList.add('hidden');
+            activeReceiptRecord = null;
+        }
+
+        // Download PDF Receipt using html2pdf.js
+        function downloadPDFReceipt() {
+            if (!activeReceiptRecord) return;
+
+            const element = document.getElementById('pdfReceiptTemplate');
+            const opt = {
+                margin:       [0.3, 0.3, 0.3, 0.3],
+                filename:     `WiFi_Receipt_${activeReceiptRecord.id}_${activeReceiptRecord.clientName.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, logging: false },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            showToast('Generating PDF receipt...');
+            html2pdf().set(opt).from(element).save().then(() => {
+                showToast('Receipt PDF downloaded');
+            });
+        }
+
+        // Print Receipt Directly via Browser Dialog
+        function printReceiptDirectly() {
+            window.print();
+        }
+
+        // Toast Helper Function
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toastMessage');
+            const iconEl = document.getElementById('toastIcon');
+
+            msgEl.textContent = message;
+            if (type === 'delete') {
+                iconEl.innerHTML = `<i class="fa-solid fa-trash-can text-red-400"></i>`;
+            } else {
+                iconEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i>`;
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Formatting Helpers
+        function formatCurrency(amount) {
+            return parseFloat(amount).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
